@@ -189,6 +189,42 @@ class App:
 
         with PdfPages(caminho) as pdf:
 
+            # >>> INÍCIO DA CAPA (ÚNICA ADIÇÃO)
+            fig, ax = plt.subplots(figsize=A4_PORTRAIT)
+            ax.axis("off")
+
+            ax.text(
+                0.5, 0.60,
+                "Relatório de VaR paramétrico multi-ações",
+                fontsize=23,
+                color="lightblue",
+                ha="center",
+                va="center",
+                weight="bold"
+            )
+
+            ax.text(
+                0.5, 0.52,
+                f"Data final da análise: {self.data.get()}\n"
+                f"Janela considerada: {self.n.get()} pregões",
+                fontsize=14,
+                ha="center",
+                va="center",
+                color="gray"
+            )
+
+            ax.text(
+                0.5, 0.06,
+                RODAPE,
+                fontsize=9,
+                color="gray",
+                ha="center"
+            )
+
+            pdf.savefig(fig)
+            plt.close(fig)
+            # >>> FIM DA CAPA
+
             for df, info in self.resultados:
                 # ===== Gráfico 1 =====
                 fig, ax = plt.subplots(figsize=A4_LANDSCAPE)
@@ -331,7 +367,6 @@ class App:
             fig, ax = plt.subplots(figsize=A4_PORTRAIT)
             ax.axis("off")
 
-            # espaço inferior reservado para o rodapé
             fig.subplots_adjust(bottom=0.00010)
 
             ax.text(0.05, 0.92, texto, fontsize=12, va="top", wrap=True)
@@ -359,3 +394,12 @@ if __name__ == "__main__":
     root = tk.Tk()
     App(root)
     root.mainloop()
+
+def main():
+    root = tk.Tk()
+    App(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,7 +1,7 @@
 import threading
 from datetime import datetime, timedelta
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 import itertools
 import math
 import os
@@ -169,7 +169,7 @@ def tabela_var_combinacoes(resultados, passo, aporte_total, aporte_mensal):
 def mostrar_grafico_interativo(tabela):
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    sc = ax.scatter(
+    ax.scatter(
         tabela["VaR %"],
         tabela["Montante Final (R$)"],
         s=40,
@@ -194,18 +194,63 @@ def mostrar_grafico_interativo(tabela):
 
     def on_pick(event):
         ind = event.ind[0]
-        x = tabela.iloc[ind]["VaR %"]
-        y = tabela.iloc[ind]["Montante Final (R$)"]
+        linha = tabela.iloc[ind]
+
+        x = linha["VaR %"]
+        y = linha["Montante Final (R$)"]
+
+        pesos_txt = ""
+        for col in tabela.columns:
+            if col.startswith("Peso"):
+                ativo = col.replace("Peso ", "").replace(" (%)", "")
+                pesos_txt += f"{ativo}: {linha[col]:.1f}%\n"
 
         anotacao.xy = (x, y)
-        anotacao.set_text(f"VaR %: {x:.2f}\nMontante: R$ {y:,.2f}")
+        anotacao.set_text(
+            f"VaR %: {x:.2f}\n"
+            f"Montante: R$ {y:,.2f}\n\n"
+            f"Composição:\n{pesos_txt}"
+        )
         anotacao.set_visible(True)
         fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("pick_event", on_pick)
-    plt.show()
 
-    
+    # carteira atual (já existente)
+    pesos_cols = [c for c in tabela.columns if c.startswith("Peso")]
+    pesos_usuario = []
+
+    for col in pesos_cols:
+        val = simpledialog.askfloat(
+            "Carteira Atual",
+            f"Informe o {col}:",
+            minvalue=0,
+            maxvalue=100
+        )
+        if val is None:
+            break
+        pesos_usuario.append(val)
+
+    if len(pesos_usuario) == len(pesos_cols):
+        pesos_usuario = np.array(pesos_usuario)
+        base = tabela[pesos_cols].values
+        dist = np.linalg.norm(base - pesos_usuario, axis=1)
+        idx = np.argmin(dist)
+
+        x_u = tabela.iloc[idx]["VaR %"]
+        y_u = tabela.iloc[idx]["Montante Final (R$)"]
+
+        ax.scatter(x_u, y_u, s=120, marker="*", zorder=5)
+        ax.annotate(
+            "Carteira Atual",
+            (x_u, y_u),
+            textcoords="offset points",
+            xytext=(10, -15),
+            fontsize=10,
+            weight="bold"
+        )
+
+    plt.show()
 
 # =========================
 # INTERFACE
@@ -412,8 +457,7 @@ class App:
         else:
             messagebox.showwarning("Aviso", "Nenhum PDF gerado ainda.")
 
-
-    # =========================
+# =========================
 # MAIN
 # =========================
 if __name__ == "__main__":

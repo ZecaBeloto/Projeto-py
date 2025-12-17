@@ -5,7 +5,6 @@ from tkinter import ttk, messagebox, filedialog
 import itertools
 import math
 import os
-
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -23,11 +22,13 @@ RODAPE = (
 )
 
 A4_LANDSCAPE = (11.69, 8.27)
+A4_PORTRAIT = (8.27, 11.69)
+
 Z_SCORE = 1.65  # 95%
 PESO_MIN = 0.05  # 5%
 
-COR_CABECALHO = "#1f4e79"   # azul escuro
-COR_LINHA = "#ddebf7"      # azul claro
+COR_CABECALHO = "#1f4e79"
+COR_LINHA = "#ddebf7"
 COR_TEXTO = "#000000"
 
 # =========================
@@ -151,7 +152,14 @@ class App:
         self.inputs = []
         self.resultados = []
         self.caminho_pdf = None
+
+        # 🔧 correção do fechamento
+        self.root.protocol("WM_DELETE_WINDOW", self.fechar)
+
         self._build()
+
+    def fechar(self):
+        self.root.destroy()
 
     def _build(self):
         frame = ttk.Frame(self.root, padding=10)
@@ -247,16 +255,39 @@ class App:
         linhas_por_pagina = 20
 
         with PdfPages(self.caminho_pdf) as pdf:
+
+            fig, ax = plt.subplots(figsize=A4_PORTRAIT)
+            ax.axis("off")
+
+            ax.text(
+                0.5, 0.60,
+                "Relatório de alocação eficiente de carteira",
+                fontsize=23,
+                color="lightblue",
+                ha="center",
+                va="center",
+                weight="bold"
+            )
+
+            ax.text(
+                0.5, 0.52,
+                f"Data final da análise: {self.data.get()}\n"
+                f"Janela considerada: {self.n.get()} pregões",
+                fontsize=14,
+                ha="center",
+                va="center",
+                color="gray"
+            )
+
+            ax.text(0.5, 0.06, RODAPE, fontsize=9, color="gray", ha="center")
+            pdf.savefig(fig)
+            plt.close(fig)
+
             for i in range(0, len(tabela), linhas_por_pagina):
                 fatia = tabela.iloc[i:i + linhas_por_pagina]
 
                 fig, ax = plt.subplots(figsize=A4_LANDSCAPE)
                 ax.axis("off")
-
-                ax.text(0.5, 0.94,
-                        "Carteiras Ordenadas por VaR (Crescente)",
-                        fontsize=16, weight="bold",
-                        ha="center", color=COR_CABECALHO)
 
                 table = ax.table(
                     cellText=np.round(fatia.values, 2),
@@ -286,9 +317,7 @@ class App:
         if self.caminho_pdf and os.path.exists(self.caminho_pdf):
             os.startfile(self.caminho_pdf)
         else:
-            messagebox.showwarning(
-                "Aviso", "Nenhum PDF gerado ainda."
-            )
+            messagebox.showwarning("Aviso", "Nenhum PDF gerado ainda.")
 
 # =========================
 # MAIN
@@ -297,3 +326,19 @@ if __name__ == "__main__":
     root = tk.Tk()
     App(root)
     root.mainloop()
+# =========================
+# MAIN
+# =========================
+if __name__ == "__main__":
+    root = tk.Tk()
+    App(root)
+    root.mainloop()
+
+def main():
+    root = tk.Tk()
+    App(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
